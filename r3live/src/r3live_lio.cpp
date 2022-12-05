@@ -459,9 +459,50 @@ void R3LIVE::lasermap_fov_segment()
     // s_plot6.push_back(omp_get_wtime() - t_begin);
 }
 
+void R3LIVE::livox_points_cbk(const livox_ros_driver::CustomMsg::ConstPtr& livox_msg)
+{
+    sensor_msgs::PointCloud2::Ptr points_msg(new sensor_msgs::PointCloud2());
+    points_msg->header.stamp = ros::Time(livox_msg->header.stamp.toSec() - m_lidar_imu_time_delay);
+    points_msg->width = livox_msg->point_num;
+    points_msg->height = 1;
+
+    points_msg->row_step = livox_msg->point_num * points_msg->point_step;
+    points_msg->data.resize(points_msg->row_step);
+
+    unsigned char* ptr = points_msg->data.data();
+    for (int i = 0; i < livox_msg->point_num; i++) {
+      *reinterpret_cast<float*>(ptr + points_msg->fields[0].offset) = livox_msg->points[i].x;
+      *reinterpret_cast<float*>(ptr + points_msg->fields[1].offset) = livox_msg->points[i].y;
+      *reinterpret_cast<float*>(ptr + points_msg->fields[2].offset) = livox_msg->points[i].z;
+      *reinterpret_cast<std::uint32_t*>(ptr + points_msg->fields[3].offset) = livox_msg->points[i].offset_time;
+      *reinterpret_cast<float*>(ptr + points_msg->fields[4].offset) = livox_msg->points[i].reflectivity;
+      *reinterpret_cast<std::uint8_t*>(ptr + points_msg->fields[5].offset) = livox_msg->points[i].tag;
+      *reinterpret_cast<std::uint8_t*>(ptr + points_msg->fields[6].offset) = livox_msg->points[i].line;
+
+      ptr += points_msg->point_step;
+    }
+    
+    if ( g_camera_lidar_queue.lidar_in( livox_msg->header.stamp.toSec() + 0.1 ) == 0 )
+    {
+        return;
+    }
+    mtx_buffer.lock();
+    // std::cout<<"got feature"<<std::endl;
+    if ( points_msg->header.stamp.toSec() < last_timestamp_lidar )
+    {
+        ROS_ERROR( "lidar loop back, clear buffer" );
+        lidar_buffer.clear();
+    }
+    // ROS_INFO("get point cloud at time: %.6f", msg->header.stamp.toSec());
+    lidar_buffer.push_back( points_msg );
+    last_timestamp_lidar = points_msg->header.stamp.toSec();
+    mtx_buffer.unlock();
+    sig_buffer.notify_all();
+}
+
 void R3LIVE::feat_points_cbk( const sensor_msgs::PointCloud2::ConstPtr &msg_in )
 {
-    sensor_msgs::PointCloud2::Ptr msg( new sensor_msgs::PointCloud2( *msg_in ) );
+    sensor_msgs::PointCloud2::Ptr msg( new sensor_msgs::PointCloud2( *msg_in ) ); 
     msg->header.stamp = ros::Time( msg_in->header.stamp.toSec() - m_lidar_imu_time_delay );
     if ( g_camera_lidar_queue.lidar_in( msg_in->header.stamp.toSec() + 0.1 ) == 0 )
     {

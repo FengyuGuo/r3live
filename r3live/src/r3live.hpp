@@ -329,10 +329,12 @@ public:
         pub_odom_cam = m_ros_node_handle.advertise<nav_msgs::Odometry>("/camera_odom", 10);
         pub_path_cam = m_ros_node_handle.advertise<nav_msgs::Path>("/camera_path", 10);
         std::string LiDAR_pointcloud_topic, IMU_topic, IMAGE_topic, IMAGE_topic_compressed;
+        bool custom_msg;
 
         get_ros_parameter<std::string>(m_ros_node_handle, "/LiDAR_pointcloud_topic", LiDAR_pointcloud_topic, std::string("/laser_cloud_flat") );
         get_ros_parameter<std::string>(m_ros_node_handle, "/IMU_topic", IMU_topic, std::string("/livox/imu") );
         get_ros_parameter<std::string>(m_ros_node_handle, "/Image_topic", IMAGE_topic, std::string("/camera/image_color") );
+        get_ros_parameter<bool>(m_ros_node_handle, "/Lidar_front_end/custom_msg", custom_msg, false);
         IMAGE_topic_compressed = std::string(IMAGE_topic).append("/compressed");
         if(1)
         {
@@ -347,7 +349,15 @@ public:
         }
 
         sub_imu = m_ros_node_handle.subscribe(IMU_topic.c_str(), 2000000, &R3LIVE::imu_cbk, this, ros::TransportHints().tcpNoDelay());
-        sub_pcl = m_ros_node_handle.subscribe(LiDAR_pointcloud_topic.c_str(), 2000000, &R3LIVE::feat_points_cbk, this, ros::TransportHints().tcpNoDelay());
+        if(custom_msg)
+        {
+            sub_pcl = m_ros_node_handle.subscribe(LiDAR_pointcloud_topic.c_str(), 2000000, &R3LIVE::livox_points_cbk, this, ros::TransportHints().tcpNoDelay());
+        }
+        else
+        {
+            sub_pcl = m_ros_node_handle.subscribe(LiDAR_pointcloud_topic.c_str(), 2000000, &R3LIVE::feat_points_cbk, this, ros::TransportHints().tcpNoDelay());
+        }
+        
         sub_img = m_ros_node_handle.subscribe(IMAGE_topic.c_str(), 1000000, &R3LIVE::image_callback, this, ros::TransportHints().tcpNoDelay());
         sub_img_comp = m_ros_node_handle.subscribe(IMAGE_topic_compressed.c_str(), 1000000, &R3LIVE::image_comp_callback, this, ros::TransportHints().tcpNoDelay());
 
@@ -443,7 +453,8 @@ public:
     bool center_in_FOV(Eigen::Vector3f cube_p);
     bool if_corner_in_FOV(Eigen::Vector3f cube_p);
     void lasermap_fov_segment();
-    void feat_points_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg_in);
+    void feat_points_cbk(const sensor_msgs::PointCloud2::ConstPtr &livox_msg);
+    void livox_points_cbk(const livox_ros_driver::CustomMsg::ConstPtr& msg_in);
     void wait_render_thread_finish();
     bool get_pointcloud_data_from_ros_message(sensor_msgs::PointCloud2::ConstPtr & msg, pcl::PointCloud<pcl::PointXYZINormal> & pcl_pc);
     int service_LIO_update();

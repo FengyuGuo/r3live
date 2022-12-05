@@ -3,6 +3,7 @@ Lidar_front_end:
    N_SCANS: 6
    using_raw_point: 1
    point_step: 1
+   custom_msg: 1 # 1 for livox custom msg, 0 for PointCloud2 msg
    
 r3live_common:
    if_dump_log: 0                   # If recording ESIKF update log. [default = 0]
