@@ -459,6 +459,10 @@ void R3LIVE::load_vio_parameters()
     m_camera_ext_R = Eigen::Map< Eigen::Matrix< double, 3, 3, Eigen::RowMajor > >( camera_ext_R_data.data() );
     m_camera_ext_t = Eigen::Map< Eigen::Matrix< double, 3, 1 > >( camera_ext_t_data.data() );
 
+    //convert from R_LtoC to R_CtoL and t_LtoC and t_CtoL
+    m_camera_ext_t = -m_camera_ext_R.transpose() * m_camera_ext_t;
+    m_camera_ext_R = m_camera_ext_R.transpose();
+
     cout << "[Ros_parameter]: r3live_vio/Camera Intrinsic: " << endl;
     cout << m_camera_intrinsic << endl;
     cout << "[Ros_parameter]: r3live_vio/Camera distcoeff: " << m_camera_dist_coeffs.transpose() << endl;

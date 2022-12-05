@@ -96,6 +96,8 @@ Dr. Fu Zhang < fuzhang@hku.hk >.
 #include "pointcloud_rgbd.hpp"
 #include "rgbmap_tracker.hpp"
 
+#include "livox_ros_driver/CustomMsg.h"
+
 #define THREAD_SLEEP_TIM 1
 
 #include "offline_map_recorder.hpp"

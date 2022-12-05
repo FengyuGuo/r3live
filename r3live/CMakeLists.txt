@@ -24,12 +24,13 @@ find_package(catkin REQUIRED COMPONENTS
                     geometry_msgs
                     nav_msgs
                     tf
-                    cv_bridge
+                    cv_bridge34
                     livox_ros_driver
             )
 
 # find_package(Ceres REQUIRED)
 find_package(PCL REQUIRED)
+set(OpenCV_DIR /usr/local/opencv34/share/OpenCV)
 find_package(OpenCV REQUIRED)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
